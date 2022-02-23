@@ -1,26 +1,62 @@
 import React from "react";
-import { View, TextInput, StyleSheet } from 'react-native';
+import {View, TextInput, StyleSheet, Button} from 'react-native';
 import FormRow from "../components/FormRow";
+import {useState, useEffect} from "react";
+import firebase from "firebase/compat";
 
 const LoginScreen = (props) => {
-  return (
-    <View>
-        <FormRow>
-            <TextInput style={styles.input} placeholder="user@mail.com"/>
-        </FormRow>
-        <FormRow>
-            <TextInput style={styles.input} placeholder="******" secureTextEntry/>
-        </FormRow>
-    </View>
-  );
+
+    const [email, setEmail] = useState('');
+    const [password, setPassword] = useState('');
+
+    const login = () => {
+        console.log(email);
+        console.log(password);
+    }
+
+    useEffect(() => {
+        const firebaseConfig = {
+            apiKey: "",
+            authDomain: "",
+            projectId: "",
+            storageBucket: "",
+            messagingSenderId: "",
+            appId: "",
+            measurementId: ""
+        };
+        firebase.initializeApp(firebaseConfig);
+        firebase.auth().signInWithEmailAndPassword('admin@series.com', 'admin@admin').then(user => {
+            console.log('usuário autenticado', user);
+        }).catch(error => {
+            console.log('Usuário não encontrado', error);
+        });
+
+    }, []);
+
+    return (
+        <View style={styles.container}>
+            <FormRow first>
+                <TextInput style={styles.input} placeholder="user@mail.com" value={email}
+                           onChangeText={value => setEmail(value)}/>
+            </FormRow>
+            <FormRow last>
+                <TextInput style={styles.input} placeholder="******" secureTextEntry value={password}
+                           onChangeText={value => setPassword(value)}/>
+            </FormRow>
+            <Button title="Login" onPress={() => login()}/>
+        </View>
+    );
 };
 
 const styles = StyleSheet.create({
-   input: {
-       paddingLeft: 5,
-       paddingRight: 5,
-       paddingBottom: 5
-   }
+    container: {
+        padding: 10
+    },
+    input: {
+        paddingLeft: 5,
+        paddingRight: 5,
+        paddingBottom: 5
+    }
 });
 
 export default LoginScreen;
