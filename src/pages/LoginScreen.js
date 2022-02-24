@@ -1,20 +1,33 @@
 import React from "react";
-import {View, TextInput, StyleSheet, Button} from 'react-native';
+import {
+    View,
+    TextInput,
+    StyleSheet,
+    Button,
+    ActivityIndicator,
+    Text,
+    Alert
+} from 'react-native';
 import FormRow from "../components/FormRow";
-import {useState, useEffect} from "react";
+import {useState} from "react";
 import firebase from "firebase/compat";
 
 const LoginScreen = (props) => {
 
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
+    const [loading, setLoading] = useState(false);
+    const [message, setMessage] = useState('');
 
     const login = () => {
-        console.log(email);
-        console.log(password);
-    }
+        setLoading(true);
+        const loginUserSuccess = () => {
+            setMessage('Success');
+        };
 
-    useEffect(() => {
+        const loginUserFailed = (errorCode) => {
+            setMessage(getMessageByErrorCode(errorCode));
+        };
         const firebaseConfig = {
             apiKey: "",
             authDomain: "",
@@ -25,13 +38,43 @@ const LoginScreen = (props) => {
             measurementId: ""
         };
         firebase.initializeApp(firebaseConfig);
-        firebase.auth().signInWithEmailAndPassword('admin@series.com', 'admin@admin').then(user => {
-            console.log('usuário autenticado', user);
+        firebase.auth().signInWithEmailAndPassword(email, password).then(user => {
+            loginUserSuccess();
         }).catch(error => {
-            console.log('Usuário não encontrado', error);
-        });
+            if (error.code === 'auth/user-not-found') {
+                Alert.alert(
+                    'User not found',
+                    'Do you want to create a record with the information entered?',
+                    [{
+                        text: 'No'
+                    }, {
+                        text: 'Yes',
+                        onPress: () => {
+                            firebase.auth().createUserWithEmailAndPassword(email, password).then(() => {
+                                loginUserSuccess();
+                            }).catch(err => {
+                                loginUserFailed(err.code);
+                            });
+                        }
+                    }],
+                    {cancelable: false}
+                );
+            }else {
+             loginUserFailed(error.code);
+            }
+        }).then(() => setLoading(false));
+    }
 
-    }, []);
+    const getMessageByErrorCode = (errorCode) => {
+        switch (errorCode) {
+            case 'auth/wrong-password':
+                return 'Incorrect password';
+            case 'auth/internal error':
+                return 'Internal error';
+            default:
+                return 'Unknown error.';
+        }
+    }
 
     return (
         <View style={styles.container}>
@@ -43,7 +86,8 @@ const LoginScreen = (props) => {
                 <TextInput style={styles.input} placeholder="******" secureTextEntry value={password}
                            onChangeText={value => setPassword(value)}/>
             </FormRow>
-            <Button title="Login" onPress={() => login()}/>
+            {loading ? <ActivityIndicator color="#6ca2f7"/> : <Button title="Login" onPress={() => login()}/>}
+            <Text>{message ? message : null}</Text>
         </View>
     );
 };
